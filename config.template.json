@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "DevOpsManagerConfig",
+  "description": "Configuration schema for the DevOps Manager skill managing remote servers, Docker environments, reverse proxies, and observability.",
+  "active_profile": "production",
+  "profiles": {
+    "production": {
+      "name": "Production VPS",
+      "host": "your-server-ip-or-domain",
+      "user": "ubuntu",
+      "ssh_port": 22,
+      "ssh_alias": "prod-server",
+      "identity_file": "~/.ssh/id_rsa",
+      "base_deploy_path": "/home/ubuntu",
+      "web_gateway": {
+        "type": "nginx-docker",
+        "container_name": "nginx-proxy",
+        "compose_path": "/home/ubuntu/nginx-proxy/docker-compose.yml",
+        "conf_dir": "/home/ubuntu/nginx-proxy/conf.d",
+        "cert_path": "/etc/letsencrypt"
+      },
+      "observability": {
+        "dockhand_url": "http://127.0.0.1:8008",
+        "prometheus_port": 9090,
+        "grafana_port": 3000
+      },
+      "thresholds": {
+        "min_free_disk_gb": 3.0,
+        "max_disk_usage_percent": 88.0,
+        "max_ram_usage_percent": 85.0
+      },
+      "safety": {
+        "enforce_docker_only": true,
+        "require_preflight_checks": true,
+        "protect_active_volumes": true,
+        "dry_run_nginx_reload": true
+      }
+    }
+  }
+}

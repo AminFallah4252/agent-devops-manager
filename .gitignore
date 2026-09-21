@@ -1,0 +1,35 @@
+# Environment & Local Secrets
+.env
+.env.*
+!.env.example
+config.json
+*.key
+*.pem
+*.pfx
+*.pub
+id_rsa*
+id_ed25519*
+*token*
+*Token*
+*credentials*
+*Credentials*
+
+# Logs and runtime artifacts
+*.log
+logs/
+tmp/
+temp/
+
+# OS & Editor Metadata
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*~
+
+# Python & Node Caches (if any local tooling used)
+__pycache__/
+*.pyc
+node_modules/
+.npm/
