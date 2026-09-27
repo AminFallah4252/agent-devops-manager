@@ -1,22 +1,22 @@
-# Cursor AI DevOps Manager Rules (.cursorrules / .cursor/rules/devops.mdc)
+# Windsurf Cascade DevOps Manager Rules (.windsurfrules)
 
-Include these directives in your workspace root `.cursorrules` or `.cursor/rules/devops.mdc` when managing server infrastructure, containerized stacks, or edge ingress:
+Include these directives in your workspace root `.windsurfrules` or `.windsurf/rules/devops.md` to guide Windsurf Cascade when managing remote servers, Docker microservices, and edge routing:
 
 ```markdown
-# Server Management & DevOps Directives
+# DevOps Manager & SRE Cascade Directives
 
 You are operating with Senior DevOps / SRE operational discipline (5-8+ years production experience). When inspecting, configuring, or deploying services on remote Linux servers:
 
 ## 1. Defensive Pre-Flight & Health Checks [INV-001]
-- Always verify available disk headroom (`df -h /`) and memory (`free -h`) before starting builds or pulling container layers.
-- Maintain at least **3.0 GB** of free root disk space at all times. Halt immediately if space is below this threshold.
-- Execute non-destructive system triage before making changes:
+- Always check available root disk space (`df -h /`) and memory/swap (`free -h`) before starting builds or pulling container images.
+- Enforce a strict minimum of **3.0 GB** free root disk space. Halt if headroom is insufficient.
+- Run non-destructive system triage before making changes:
   - PowerShell: `pwsh scripts/server-health-audit.ps1 -Profile <profile>`
   - Bash: `bash scripts/server-health-audit.sh --profile <profile>`
 
 ## 2. Container-First Policy & Resource Containment [NEG-002]
-- ALL applications, background daemons, and APIs must run containerized via Docker Compose.
-- Never launch bare-metal processes directly on the host (`nohup`, `screen`, `tmux`, manual `python`/`node` daemons).
+- All applications, background daemons, and APIs must run containerized via Docker Compose.
+- Never run bare-metal processes directly on the host (`nohup`, `screen`, `tmux`, ad-hoc `python`/`node` daemons).
 - Every service definition must declare:
   - Explicit container name: `container_name: <service-name>`
   - Automatic restart policy: `restart: unless-stopped`
@@ -32,7 +32,7 @@ You are operating with Senior DevOps / SRE operational discipline (5-8+ years pr
 
 ## 3. Zero-Downtime Nginx Ingress & Pre-Flight Syntax Testing [INV-002]
 - Ingress traffic is centralized through the containerized Nginx reverse proxy (ports 80 & 443).
-- When modifying reverse proxy virtual hosts in `conf.d/`, ALWAYS perform a pre-flight syntax test before reloading:
+- When modifying reverse proxy virtual hosts in `conf.d/`, ALWAYS test syntax before reloading:
   - PowerShell: `pwsh scripts/safe-nginx-reload.ps1 -TestOnly`
   - Bash: `bash scripts/safe-nginx-reload.sh --test-only`
 - Only reload if the syntax test exits 0:
@@ -40,10 +40,10 @@ You are operating with Senior DevOps / SRE operational discipline (5-8+ years pr
   - Bash: `bash scripts/safe-nginx-reload.sh`
 - Never execute blind `nginx -s reload` without pre-validation.
 
-## 4. Dual-Engine CLI Execution & Simulation Parity [INV-006]
-- Every operational script supports dual-engine execution (PowerShell 7+ and POSIX Bash).
+## 4. Dual-Engine CLI Automation Parity [INV-006]
+- Automation scripts maintain 100% parity across PowerShell 7+ (`scripts/*.ps1`) and POSIX Bash (`scripts/*.sh`).
 - Use dry-run simulation mode (`-DryRun` / `--dry-run`) to verify execution plans before touching production state.
-- Standard arguments:
+- Standard arguments supported across all tools:
   - Target Profile: `-Profile <name>` / `-p, --profile <name>`
   - Dry Run: `-DryRun` / `-d, --dry-run`
   - Pre-flight Test: `-TestOnly` / `-t, --test-only`
@@ -57,17 +57,16 @@ You are operating with Senior DevOps / SRE operational discipline (5-8+ years pr
 - Execute streaming database dumps via `docker exec`:
   - PostgreSQL: `bash scripts/backup-service.sh --db-type postgres --db-container <c> --db-user <u> --db-name <d>`
   - MySQL: `bash scripts/backup-service.sh --db-type mysql --db-container <c> --db-user <u> --db-name <d>`
-- Retention rotation maintains 7 daily and 4 weekly archives.
+- Retention rotation maintains 7 daily and 4 weekly archives without modifying persistent volumes.
 
 ## 6. Host & Perimeter Security Hardening [INV-004]
 - Edge security enforces UFW default-deny incoming with dynamic SSH port ingress:
   - Bash: `bash scripts/apply-security-hardening.sh --profile <profile>`
 - Enforce Fail2ban brute-force jails for SSH (`maxretry: 5`) and Nginx rate-limiting.
 - Configure daily non-interactive automated patching via `unattended-upgrades`.
-- Never disable firewall or permit unauthenticated administrative ports publicly.
 
 ## 7. Strict Schema Validation [INV-005]
-- Before committing changes to `config.json` or `config.template.json`, validate against JSON Schema:
+- Validate configuration files against JSON Schema Draft 2020-12:
   - `python scripts/validate-config.py --config config.json`
 
 ## 8. Strictly Forbidden Actions & Negative Guardrails
