@@ -102,10 +102,9 @@ print(f"SSH_PORT='{p.get('ssh_port', '')}'")
 print(f"SSH_ALIAS='{p.get('ssh_alias', '')}'")
 EOF
 )" || {
-        exit_code=$?
-        echo "Error: Profile '$PROFILE_NAME' not found in $CONFIG_PATH" >&2
-        exit $exit_code
-    }
+    echo "Error: Profile '$PROFILE_NAME' not found in $CONFIG_PATH" >&2
+    exit 1
+}
     eval "$PARSED_CONFIG"
 else
     if [ -z "$PROFILE_NAME" ]; then

@@ -73,7 +73,7 @@ for cand in python3 python; do
 done
 
 if [ -n "$PYTHON_CMD" ]; then
-    PARSED_CONFIG="$("$PYTHON_CMD" - "$CONFIG_PATH" "$PROFILE_NAME" << 'EOF'
+    if ! PARSED_CONFIG="$("$PYTHON_CMD" - "$CONFIG_PATH" "$PROFILE_NAME" << 'EOF'
 import json, sys
 
 config_path = sys.argv[1]
@@ -105,11 +105,9 @@ print(f"SSH_ALIAS='{p.get('ssh_alias', '')}'")
 print(f"MAX_RAM_USAGE_PERCENT='{thresh.get('max_ram_usage_percent', 85.0)}'")
 print(f"MIN_FREE_DISK_GB='{thresh.get('min_free_disk_gb', 3.0)}'")
 EOF
-)" || {
-        exit_code=$?
-        echo "Error: Profile '$PROFILE_NAME' not found in $CONFIG_PATH" >&2
-        exit $exit_code
-    }
+)"; then
+        exit 1
+    fi
     eval "$PARSED_CONFIG"
 else
     # Fallback when Python is unavailable

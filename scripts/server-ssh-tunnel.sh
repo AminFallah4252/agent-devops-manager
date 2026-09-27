@@ -108,10 +108,9 @@ print(f"PROFILE_NAME='{prof_name}'")
 print(f"TUNNEL_ALIAS='{tunnel_alias}'")
 EOF
 )" || {
-        exit_code=$?
-        echo "Error: Profile '$PROFILE_NAME' not found in $CONFIG_PATH" >&2
-        exit $exit_code
-    }
+    echo "Error: Profile '$PROFILE_NAME' not found in $CONFIG_PATH" >&2
+    exit 1
+}
     eval "$PARSED_CONFIG"
 else
     if [ -z "$PROFILE_NAME" ]; then
