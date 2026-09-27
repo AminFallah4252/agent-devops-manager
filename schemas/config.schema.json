@@ -166,6 +166,10 @@
         "tunnel_alias": {
           "type": "string",
           "description": "Optional SSH tunnel configuration alias."
+        },
+        "dockhand_domain": {
+          "type": "string",
+          "description": "Optional public domain or URL for Dockhand dashboard."
         }
       }
     },
