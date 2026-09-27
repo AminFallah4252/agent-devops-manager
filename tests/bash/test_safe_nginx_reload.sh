@@ -57,4 +57,12 @@ assert_exit_code 1 "$MOCK_FAIL_CODE" "Syntax check failure returns exit code 1"
 assert_contains "$MOCK_FAIL_OUTPUT" "Reload ABORTED to protect active web traffic" "Aborts reload when syntax is invalid"
 teardown_mock_bin
 
+# Test 8: Missing profile validation
+set +e
+MISSING_PROF_OUTPUT="$("$TARGET_SCRIPT" --config "$FIXTURE_CONFIG" --profile "unknown-profile" 2>&1)"
+MISSING_PROF_CODE=$?
+set -e
+assert_exit_code 1 "$MISSING_PROF_CODE" "Exits with code 1 on unknown profile"
+assert_contains "$MISSING_PROF_OUTPUT" "Profile 'unknown-profile' not found" "Displays unknown profile error"
+
 print_summary "safe-nginx-reload.sh"

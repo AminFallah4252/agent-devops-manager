@@ -65,4 +65,16 @@ assert_contains "$CAPTURED_ARGS" "image prune -f" "Uses safe image prune"
 assert_contains "$CAPTURED_ARGS" "builder prune -f" "Uses safe builder prune"
 teardown_mock_bin
 
+# Test 7: Missing profile validation
+set +e
+MISSING_PROF_OUTPUT="$("$TARGET_SCRIPT" --config "$FIXTURE_CONFIG" --profile "unknown-profile" 2>&1)"
+MISSING_PROF_CODE=$?
+set -e
+assert_exit_code 1 "$MISSING_PROF_CODE" "Exits with code 1 on unknown profile"
+assert_contains "$MISSING_PROF_OUTPUT" "Profile 'unknown-profile' not found" "Displays unknown profile error"
+
+# Test 8: Test-only flag behaves like dry-run
+TEST_ONLY_OUTPUT="$("$TARGET_SCRIPT" --config "$FIXTURE_CONFIG" --profile "mock-profile" -t)"
+assert_contains "$TEST_ONLY_OUTPUT" "Dry-run mode active" "Supports -t/--test-only flag"
+
 print_summary "docker-cleanup.sh"
