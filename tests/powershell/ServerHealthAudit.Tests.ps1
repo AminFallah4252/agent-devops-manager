@@ -28,6 +28,25 @@ Describe "ServerHealthAudit Script Tests" {
         }
     }
 
+    Context "Dry-Run and Contract Modes" {
+        It "Simulates health check and skips remote SSH in DryRun mode" {
+            Mock ssh { throw "Should not be called in DryRun" }
+            $output = & $scriptPath -ConfigPath $fixtureConfig -ProfileName "mock-profile" -DryRun 6>&1
+            $outputStr = $output | Out-String
+            $outputStr | Should -Match "System Uptime and Load \(simulation\):"
+            $outputStr | Should -Match "Audit Complete: Ready for Operations"
+            Assert-MockCalled ssh -Times 0
+        }
+
+        It "Outputs valid JSON when Json flag is specified with DryRun" {
+            $jsonStr = & $scriptPath -ConfigPath $fixtureConfig -ProfileName "mock-profile" -DryRun -Json
+            $parsed = $jsonStr | ConvertFrom-Json
+            $parsed.action | Should -Be "health-audit"
+            $parsed.dry_run | Should -Be $true
+            $parsed.status | Should -Be "healthy"
+        }
+    }
+
     Context "Healthy Server Audit" {
         It "Reports healthy status when all metrics are within safe thresholds" {
             Mock ssh {

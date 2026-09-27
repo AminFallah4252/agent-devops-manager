@@ -25,6 +25,25 @@ Describe "ServerSshTunnel Script Tests" {
         }
     }
 
+    Context "Dry-Run and Contract Modes" {
+        It "Simulates tunnel command in DryRun mode without launching processes" {
+            Mock Start-Process { throw "Should not be called in DryRun" }
+            $output = & $scriptPath -ConfigPath $fixtureConfig -ProfileName "mock-profile" -DryRun 6>&1
+            $outputStr = $output | Out-String
+            $outputStr | Should -Match "Dry-run mode active"
+            $outputStr | Should -Match "Tunnel command simulated"
+            Assert-MockCalled Start-Process -Times 0
+        }
+
+        It "Outputs valid JSON when Json flag is specified with DryRun" {
+            $jsonStr = & $scriptPath -ConfigPath $fixtureConfig -ProfileName "mock-profile" -DryRun -Json
+            $parsed = $jsonStr | ConvertFrom-Json
+            $parsed.action | Should -Be "ssh-tunnel"
+            $parsed.tunnel_alias | Should -Be "mock-tunnel"
+            $parsed.dry_run | Should -Be $true
+        }
+    }
+
     Context "Port Detection and Tunnel Management" {
         It "Detects active port 8008 and skips process launch" {
             Mock Get-NetTCPConnection {
