@@ -65,4 +65,16 @@ LAUNCH_RECORD="$(cat "${MOCK_DIR}/tunnel_launched.txt" 2>/dev/null || echo "")"
 assert_contains "$LAUNCH_RECORD" "-N -f mock-tunnel" "Passes -N -f mock-tunnel arguments"
 teardown_mock_bin
 
+# Test 8: Missing profile validation
+set +e
+MISSING_PROF_OUTPUT="$("$TARGET_SCRIPT" --config "$FIXTURE_CONFIG" --profile "unknown-profile" 2>&1)"
+MISSING_PROF_CODE=$?
+set -e
+assert_exit_code 1 "$MISSING_PROF_CODE" "Exits with code 1 on unknown profile"
+assert_contains "$MISSING_PROF_OUTPUT" "Profile 'unknown-profile' not found" "Displays unknown profile error"
+
+# Test 9: Test-only flag behaves like check-only
+DRY_TEST_OUTPUT="$("$TARGET_SCRIPT" --config "$FIXTURE_CONFIG" --profile "mock-profile" --dry-run -t)"
+assert_contains "$DRY_TEST_OUTPUT" "Tunnel is NOT active. Port 8008 is not bound (simulated)." "Supports -t/--test-only flag"
+
 print_summary "server-ssh-tunnel.sh"
