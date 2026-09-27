@@ -69,4 +69,33 @@ assert_exit_code 1 "$MOCK_FAIL_CODE" "Connection error returns exit code 1"
 assert_contains "$MOCK_FAIL_OUTPUT" "Failed to connect or execute remote health audit" "Reports connection failure message"
 teardown_mock_bin
 
+# Test 7: Missing profile validation
+set +e
+MISSING_PROF_OUTPUT="$("$TARGET_SCRIPT" --config "$FIXTURE_CONFIG" --profile "unknown-profile" 2>&1)"
+MISSING_PROF_CODE=$?
+set -e
+assert_exit_code 1 "$MISSING_PROF_CODE" "Exits with code 1 on unknown profile"
+assert_contains "$MISSING_PROF_OUTPUT" "Profile 'unknown-profile' not found" "Displays unknown profile error"
+
+# Test 8: Test-only flag behaves like dry-run
+TEST_ONLY_OUTPUT="$("$TARGET_SCRIPT" --config "$FIXTURE_CONFIG" --profile "mock-profile" -t)"
+assert_contains "$TEST_ONLY_OUTPUT" "System Uptime and Load (simulation)" "Supports -t/--test-only flag"
+
+# Test 9: RAM threshold alert
+setup_mock_bin
+create_mock "ssh" 'cat << "EOF"
+===UPTIME===
+ 10:00:00 up 20 days, load average: 0.10, 0.08, 0.05
+===MEMORY===
+Mem: 8000000000 7500000000 500000000 100000000 500000000 300000000
+===DISK===
+/dev/root 40000000 20000000 20000000 50% /
+===DOCKER===
+NO_DOCKER
+EOF
+exit 0'
+RAM_WARN_OUTPUT="$("$TARGET_SCRIPT" --config "$FIXTURE_CONFIG" --profile "mock-profile")"
+assert_contains "$RAM_WARN_OUTPUT" "WARNING: RAM usage exceeds threshold" "Emits RAM threshold warning"
+teardown_mock_bin
+
 print_summary "server-health-audit.sh"

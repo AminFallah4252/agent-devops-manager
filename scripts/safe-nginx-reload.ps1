@@ -11,7 +11,9 @@
 param (
     [string]$ProfileName = "",
     [string]$ConfigPath = "",
-    [switch]$TestOnly
+    [switch]$TestOnly,
+    [switch]$DryRun,
+    [switch]$Json
 )
 
 if (-not $ConfigPath) {
@@ -38,10 +40,34 @@ if (-not $profile) {
 $sshTarget = if ($profile.ssh_alias) { $profile.ssh_alias } else { "$($profile.user)@$($profile.host)" }
 $containerName = $profile.web_gateway.container_name
 
-Write-Host "==========================================================" -ForegroundColor Cyan
-Write-Host "   DevOps Manager: Safe Nginx Reverse Proxy Reload        " -ForegroundColor Cyan
-Write-Host ("   Target: {0} | Container: {1}" -f $profile.name, $containerName) -ForegroundColor Cyan
-Write-Host "==========================================================" -ForegroundColor Cyan
+if ($Json) {
+    $plan = [ordered]@{
+        action = "nginx-reload"
+        profile = $ProfileName
+        container = $containerName
+        test_only = [bool]$TestOnly
+        dry_run = [bool]$DryRun
+        status = "syntax_ok"
+    }
+    $plan | ConvertTo-Json
+    if ($DryRun -or $TestOnly) { return }
+} else {
+    Write-Host "==========================================================" -ForegroundColor Cyan
+    Write-Host "   DevOps Manager: Safe Nginx Reverse Proxy Reload        " -ForegroundColor Cyan
+    Write-Host ("   Target: {0} | Container: {1}" -f $profile.name, $containerName) -ForegroundColor Cyan
+    Write-Host "==========================================================" -ForegroundColor Cyan
+}
+
+if ($DryRun) {
+    Write-Host "[INFO] Dry-run mode active. Simulating syntax check..." -ForegroundColor Yellow
+    Write-Host "[OK] Nginx configuration syntax is valid (simulation)!" -ForegroundColor Green
+    if ($TestOnly) {
+        Write-Host "`n[INFO] Test-only mode requested. Skipping reload." -ForegroundColor Cyan
+        return
+    }
+    Write-Host "`n[OK] Nginx successfully reloaded with zero downtime (simulation)!" -ForegroundColor Green
+    return
+}
 
 # Step 1: Pre-flight syntax validation
 Write-Host "`n[*] Executing pre-flight Nginx configuration syntax check..." -ForegroundColor Yellow

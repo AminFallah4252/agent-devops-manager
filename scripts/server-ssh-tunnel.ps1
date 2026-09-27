@@ -12,8 +12,15 @@
 param (
     [string]$ProfileName = "",
     [string]$ConfigPath = "",
-    [switch]$CheckOnly
+    [switch]$CheckOnly,
+    [switch]$TestOnly,
+    [switch]$DryRun,
+    [switch]$Json
 )
+
+if ($TestOnly) {
+    $CheckOnly = $true
+}
 
 $ErrorActionPreference = "Stop"
 
@@ -43,13 +50,39 @@ if (-not $tunnelAlias) {
     $tunnelAlias = "hephaest-tunnel"
 }
 
+# Check if port 8008 is currently listening locally
+$activeConnection = Get-NetTCPConnection -LocalPort 8008 -ErrorAction SilentlyContinue
+$isActive = [bool]$activeConnection
+
+if ($Json) {
+    $result = [ordered]@{
+        action = "ssh-tunnel"
+        tunnel_alias = $tunnelAlias
+        port_8008_active = if ($DryRun) { [bool](-not $CheckOnly) } else { $isActive }
+        check_only = [bool]$CheckOnly
+        dry_run = [bool]$DryRun
+    }
+    $result | ConvertTo-Json
+    return
+}
+
 Write-Host "==========================================================" -ForegroundColor Cyan
 Write-Host "   DevOps Manager: Admin UI SSH Port-Forwarding Tunnel    " -ForegroundColor Cyan
 Write-Host ("   Alias: {0}" -f $tunnelAlias) -ForegroundColor Cyan
 Write-Host "==========================================================" -ForegroundColor Cyan
 
-# Check if port 8008 is currently listening locally
-$activeConnection = Get-NetTCPConnection -LocalPort 8008 -ErrorAction SilentlyContinue
+if ($DryRun) {
+    Write-Host "[INFO] Dry-run mode active. Simulating port check..." -ForegroundColor Yellow
+    if ($CheckOnly) {
+        Write-Host "[INFO] Tunnel is NOT active. Port 8008 is not bound (simulated)." -ForegroundColor Yellow
+        return
+    }
+    Write-Host ("[OK] Tunnel command simulated: ssh -N -f {0}" -f $tunnelAlias) -ForegroundColor Green
+    Write-Host "     - Dockhand UI:   http://localhost:8008" -ForegroundColor Cyan
+    Write-Host "     - Grafana:       http://localhost:3000" -ForegroundColor Cyan
+    Write-Host "     - Prometheus:    http://localhost:19090" -ForegroundColor Cyan
+    return
+}
 
 if ($activeConnection) {
     Write-Host "[OK] Tunnel appears to be ACTIVE. Port 8008 is currently bound." -ForegroundColor Green

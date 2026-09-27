@@ -19,7 +19,15 @@ echo "=========================================================="
 echo ""
 echo "[*] Phase 1: Running ShellCheck on Bash and POSIX scripts..."
 
-if ! command -v shellcheck >/dev/null 2>&1; then
+SHELLCHECK_BIN=""
+for candidate in "$HOME/.local/bin/shellcheck" shellcheck shellcheck.exe; do
+    if command -v "$candidate" >/dev/null 2>&1 || [ -x "$candidate" ]; then
+        SHELLCHECK_BIN="$candidate"
+        break
+    fi
+done
+
+if [ -z "$SHELLCHECK_BIN" ]; then
     echo "[-] Error: 'shellcheck' executable not found in PATH." >&2
     exit 1
 fi
@@ -33,7 +41,7 @@ SHELL_FILES+=("${SCRIPT_DIR}/lint.sh")
 
 for sh_file in "${SHELL_FILES[@]}"; do
     rel_path="${sh_file#"$ROOT_DIR"/}"
-    if shellcheck -x "$sh_file"; then
+    if (cd "$ROOT_DIR" && "$SHELLCHECK_BIN" -x "$rel_path"); then
         echo "  [OK] $rel_path"
     else
         echo "  [FAIL] $rel_path" >&2

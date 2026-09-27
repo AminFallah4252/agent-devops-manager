@@ -50,6 +50,8 @@ flowchart TD
 | **Nginx Syntax Test** | `docker compose -f <nginx-compose> exec nginx nginx -t` | Dry-run syntax check before reload |
 | **Graceful Nginx Reload** | `powershell scripts/safe-nginx-reload.ps1` | Zero-downtime hot reload |
 | **Safe Docker Cleanup** | `powershell scripts/docker-cleanup.ps1` | Prunes dangling images & build cache (keeps volumes) |
+| **Hot Volume Backup** | `bash scripts/backup-service.sh -v <vol>` | Hot backup via ephemeral Alpine container (:ro mount) |
+| **Streaming DB Backup** | `bash scripts/backup-service.sh --db-type <type>` | Streaming pg_dump/mysqldump with daily/weekly rotation |
 
 ---
 
@@ -167,6 +169,26 @@ To maintain continuous stability on storage- and memory-constrained VPS instance
 
 ---
 
+### SOP 4: Automated Backup & Disaster Recovery Protocol
+
+1. **Hot Volume Backup (Zero Downtime)**:
+   ```bash
+   bash scripts/backup-service.sh --volume <volume_name> --backup-dir /var/backups
+   ```
+   *Safety*: Mounts volume read-only (`:ro`) in ephemeral Alpine container; creates timestamped `.tar.gz`. Persistent volumes are NEVER pruned [NEG-001].
+2. **Streaming Database Backup**:
+   ```bash
+   # PostgreSQL
+   bash scripts/backup-service.sh --db-type postgres --db-container <pg_container> --db-name <db_name>
+   # MySQL
+   bash scripts/backup-service.sh --db-type mysql --db-container <mysql_container> --db-name <db_name>
+   ```
+   *Secrets*: Credentials resolved via environment variables or CLI flags [NEG-003].
+3. **Retention Rotation**:
+   Automatic dual-tier daily (keep last 7) and weekly (keep last 4) prune sweep safely isolates archive patterns without deleting active containers or volumes.
+
+---
+
 ## 📚 Deep-Dive Reference Modules
 
 - **[SSH & Connectivity](references/ssh-and-connectivity.md)**: Zero-leak SSH, custom ports, keypairs, bastion hosts & UI tunneling.
@@ -175,6 +197,7 @@ To maintain continuous stability on storage- and memory-constrained VPS instance
 - **[Resource & Disk Hygiene](references/resource-and-disk-hygiene.md)**: Headroom enforcement, safe prune, journal vacuum, log rotation.
 - **[Observability & Health Checks](references/observability-and-health-checks.md)**: System triage matrix, Prometheus, Node Exporter, cAdvisor, Dockhand.
 - **[Incident Playbooks & Recovery](references/incident-playbooks-and-recovery.md)**: OOM freezes, disk-full emergencies, port collisions, container crash loops.
+- **[Backup & Disaster Recovery](references/backup-and-disaster-recovery.md)**: Hot volume backups, streaming database dumps, daily/weekly retention rotation, and disaster recovery playbooks.
 - **[Safety Guardrails & Audit](references/safety-guardrails-and-audit.md)**: Prohibited destructive commands, pre-flight checks, topology documentation.
 
 ---
@@ -184,4 +207,5 @@ To maintain continuous stability on storage- and memory-constrained VPS instance
 - [`scripts/server-health-audit.ps1`](scripts/server-health-audit.ps1): Cross-platform multi-metric non-destructive health audit.
 - [`scripts/safe-nginx-reload.ps1`](scripts/safe-nginx-reload.ps1): Validates syntax (`nginx -t`) inside container before initiating zero-downtime reload.
 - [`scripts/docker-cleanup.ps1`](scripts/docker-cleanup.ps1): Safe cleanup of dangling images and build cache without data loss.
+- [`scripts/backup-service.sh`](scripts/backup-service.sh) / [`scripts/backup-service.ps1`](scripts/backup-service.ps1): Safe non-destructive hot volume & database streaming backups with dual-tier retention rotation.
 - [`scripts/server-ssh-tunnel.ps1`](scripts/server-ssh-tunnel.ps1): One-click local port forwarding for internal dashboards (Dockhand, Prometheus, Grafana).

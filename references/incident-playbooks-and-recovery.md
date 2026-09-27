@@ -118,3 +118,46 @@ Step-by-step diagnostic and remediation playbooks for common production server i
    ```bash
    docker run --rm -it --entrypoint sh <image_name>
    ```
+
+---
+
+## 🚨 Playbook 5: Data Corruption & Disaster Recovery (Hot Restoration)
+
+### Symptoms:
+- Database files corrupted or table space failed.
+- Application data lost or accidental deletion inside persistent volume.
+- Service fails to boot due to broken internal state.
+
+### Step-by-Step Remediation:
+
+1. **Stop Application Container**:
+   ```bash
+   docker stop <container_name>
+   ```
+2. **Locate Latest Valid Backup Archive**:
+   ```bash
+   ls -la /var/backups/<service_or_volume>_*.tar.gz
+   ls -la /var/backups/<db_container>_*.sql.gz
+   ```
+3. **Restore Volume via Ephemeral Alpine Container**:
+   ```bash
+   docker run --rm \
+     -v "<volume_name>:/target" \
+     -v "/var/backups:/backup:ro" \
+     alpine sh -c "cd /target && rm -rf ./* && tar xzf /backup/<archive_name>.tar.gz -C /target"
+   ```
+4. **Restore Database (if applicable)**:
+   ```bash
+   # PostgreSQL
+   gunzip -c /var/backups/<archive_name>.sql.gz | docker exec -i <container_name> psql -U <user> -d <db_name>
+
+   # MySQL
+   gunzip -c /var/backups/<archive_name>.sql.gz | docker exec -i <container_name> mysql -u <user> -p"<password>" <db_name>
+   ```
+5. **Start Service & Verify Health**:
+   ```bash
+   docker start <container_name>
+   docker logs --tail=50 <container_name>
+   powershell scripts/server-health-audit.ps1
+   ```
+

@@ -9,7 +9,10 @@
 [CmdletBinding()]
 param (
     [string]$ProfileName = "",
-    [string]$ConfigPath = ""
+    [string]$ConfigPath = "",
+    [switch]$DryRun,
+    [switch]$TestOnly,
+    [switch]$Json
 )
 
 $ErrorActionPreference = "Stop"
@@ -35,10 +38,51 @@ if (-not $profile) {
     return
 }
 
-Write-Host "==========================================================" -ForegroundColor Cyan
-Write-Host "   DevOps Manager: Remote Health and Triage Audit         " -ForegroundColor Cyan
-Write-Host ("   Target: {0} ({1}@{2}:{3})" -f $profile.name, $profile.user, $profile.host, $profile.ssh_port) -ForegroundColor Cyan
-Write-Host "==========================================================" -ForegroundColor Cyan
+if ($DryRun -or $TestOnly) {
+    if ($Json) {
+        $result = [ordered]@{
+            action = "health-audit"
+            profile = $ProfileName
+            dry_run = $true
+            status = "healthy"
+            metrics = [ordered]@{
+                uptime_days = 45
+                ram_used_percent = 60.0
+                disk_free_gb = 18.0
+                containers_active = 2
+            }
+        }
+        $result | ConvertTo-Json
+        return
+    }
+
+    Write-Host "==========================================================" -ForegroundColor Cyan
+    Write-Host "   DevOps Manager: Remote Health and Triage Audit         " -ForegroundColor Cyan
+    Write-Host ("   Target Profile: {0}" -f $ProfileName) -ForegroundColor Cyan
+    Write-Host "==========================================================" -ForegroundColor Cyan
+    Write-Host "`n[+] System Uptime and Load (simulation):" -ForegroundColor Green
+    Write-Host "    12:00:00 up 45 days, 1 user, load average: 0.20, 0.15, 0.10"
+    Write-Host "`n[+] Memory (RAM) Status (simulation):" -ForegroundColor Green
+    Write-Host "    Total: 8.00 GB | Used: 4.80 GB (60.0%) | Available: 3.20 GB"
+    Write-Host "    [ok] RAM headroom is healthy." -ForegroundColor DarkGreen
+    Write-Host "`n[+] Storage and Disk Headroom (/) (simulation):" -ForegroundColor Green
+    Write-Host "    Total: 40.00 GB | Free: 18.00 GB | Used: 55%"
+    Write-Host "    [ok] Disk headroom is within safe operating parameters." -ForegroundColor DarkGreen
+    Write-Host "`n[+] Active Docker Containers (simulation):" -ForegroundColor Green
+    Write-Host "    - nginx-proxy               | Up 12 days           | 0.0.0.0:80->80/tcp, 0.0.0.0:443->443/tcp"
+    Write-Host "    - dockhand                  | Up 12 days           | 127.0.0.1:8008->80/tcp"
+    Write-Host "`n==========================================================" -ForegroundColor Cyan
+    Write-Host "   Audit Complete: Ready for Operations                  " -ForegroundColor Cyan
+    Write-Host "==========================================================" -ForegroundColor Cyan
+    return
+}
+
+if (-not $Json) {
+    Write-Host "==========================================================" -ForegroundColor Cyan
+    Write-Host "   DevOps Manager: Remote Health and Triage Audit         " -ForegroundColor Cyan
+    Write-Host ("   Target: {0} ({1}@{2}:{3})" -f $profile.name, $profile.user, $profile.host, $profile.ssh_port) -ForegroundColor Cyan
+    Write-Host "==========================================================" -ForegroundColor Cyan
+}
 
 $sshArgs = @()
 if ($profile.ssh_alias) {
@@ -126,6 +170,40 @@ try {
                 }
             }
         }
+    }
+
+    if ($Json) {
+        $overallStatus = "healthy"
+        if ($diskFreeGB -and ($diskFreeGB -lt $profile.thresholds.min_free_disk_gb)) {
+            $overallStatus = "critical"
+        } elseif ($usedPct -and ($usedPct -ge $profile.thresholds.max_ram_usage_percent)) {
+            $overallStatus = "warning"
+        }
+
+        $containerCount = 0
+        if ($dockerSection -and $dockerSection -ne "NO_DOCKER") {
+            $cLines = ($dockerSection -split "`n") | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
+            $containerCount = $cLines.Count
+        }
+
+        $res = [ordered]@{
+            action = "health-audit"
+            profile = $ProfileName
+            dry_run = $false
+            status = $overallStatus
+            metrics = [ordered]@{
+                uptime = $uptimeLine
+                ram_used_percent = $usedPct
+                ram_total_gb = $totalGB
+                ram_free_gb = $availGB
+                disk_total_gb = $diskTotalGB
+                disk_free_gb = $diskFreeGB
+                disk_used_percent = $diskPct
+                containers_active = $containerCount
+            }
+        }
+        $res | ConvertTo-Json
+        return
     }
 
     Write-Host "`n==========================================================" -ForegroundColor Cyan
