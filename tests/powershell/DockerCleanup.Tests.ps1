@@ -30,6 +30,25 @@ Describe "DockerCleanup Script Tests" {
         }
     }
 
+    Context "Dry-Run and Contract Modes" {
+        It "Outputs execution plan and skips remote execution in DryRun mode" {
+            Mock ssh { throw "Should not be called in DryRun" }
+            $output = & $scriptPath -ConfigPath $fixtureConfig -ProfileName "mock-profile" -DryRun 6>&1
+            $outputStr = $output | Out-String
+            $outputStr | Should -Match "Dry-run mode active"
+            $outputStr | Should -Match "Hygiene Protocol Complete. Persistent Volumes Intact."
+            Assert-MockCalled ssh -Times 0
+        }
+
+        It "Outputs valid JSON when Json flag is specified with DryRun" {
+            $jsonStr = & $scriptPath -ConfigPath $fixtureConfig -ProfileName "mock-profile" -DryRun -Json
+            $parsed = $jsonStr | ConvertFrom-Json
+            $parsed.action | Should -Be "docker-cleanup"
+            $parsed.dry_run | Should -Be $true
+            $parsed.volumes_preserved | Should -Be $true
+        }
+    }
+
     Context "Execution and Disk Parsing" {
         It "Parses pre and post disk states correctly and succeeds" {
             Mock ssh {
