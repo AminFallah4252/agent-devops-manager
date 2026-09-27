@@ -90,6 +90,30 @@ for json_file in "${JSON_FILES[@]}"; do
     fi
 done
 
+# 3. Strict Schema Validation [INV-005]
+echo ""
+echo "[*] Phase 3: Strict Configuration Schema Validation [INV-005]..."
+
+if [ -n "$PYTHON_CMD" ]; then
+    if (cd "$ROOT_DIR" && "$PYTHON_CMD" scripts/validate-config.py --config config.template.json); then
+        echo "  [OK] config.template.json conforms to schemas/config.schema.json"
+    else
+        echo "  [FAIL] config.template.json schema validation failed" >&2
+        LINT_ERRORS=$((LINT_ERRORS + 1))
+    fi
+
+    if [ -f "${ROOT_DIR}/tests/fixtures/test-config.json" ]; then
+        if (cd "$ROOT_DIR" && "$PYTHON_CMD" scripts/validate-config.py --config tests/fixtures/test-config.json); then
+            echo "  [OK] tests/fixtures/test-config.json conforms to schemas/config.schema.json"
+        else
+            echo "  [FAIL] tests/fixtures/test-config.json schema validation failed" >&2
+            LINT_ERRORS=$((LINT_ERRORS + 1))
+        fi
+    fi
+else
+    echo "  [WARN] Python not available for schema validation."
+fi
+
 echo ""
 echo "=========================================================="
 if [ "$LINT_ERRORS" -gt 0 ]; then
@@ -98,6 +122,6 @@ if [ "$LINT_ERRORS" -gt 0 ]; then
     exit 1
 fi
 
-echo "   Linting PASSED: All Shell and JSON files valid."
+echo "   Linting PASSED: All Shell, JSON, and Schema checks valid."
 echo "=========================================================="
 exit 0

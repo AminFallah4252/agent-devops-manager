@@ -198,6 +198,7 @@ To maintain continuous stability on storage- and memory-constrained VPS instance
 - **[Observability & Health Checks](references/observability-and-health-checks.md)**: System triage matrix, Prometheus, Node Exporter, cAdvisor, Dockhand.
 - **[Incident Playbooks & Recovery](references/incident-playbooks-and-recovery.md)**: OOM freezes, disk-full emergencies, port collisions, container crash loops.
 - **[Backup & Disaster Recovery](references/backup-and-disaster-recovery.md)**: Hot volume backups, streaming database dumps, daily/weekly retention rotation, and disaster recovery playbooks.
+- **[Firewall & Host Hardening](references/firewall-and-host-hardening.md)**: UFW firewall baseline, Fail2ban intrusion prevention, unattended-upgrades, and sysctl network hardening.
 - **[Safety Guardrails & Audit](references/safety-guardrails-and-audit.md)**: Prohibited destructive commands, pre-flight checks, topology documentation.
 
 ---
@@ -209,3 +210,4 @@ To maintain continuous stability on storage- and memory-constrained VPS instance
 - [`scripts/docker-cleanup.ps1`](scripts/docker-cleanup.ps1): Safe cleanup of dangling images and build cache without data loss.
 - [`scripts/backup-service.sh`](scripts/backup-service.sh) / [`scripts/backup-service.ps1`](scripts/backup-service.ps1): Safe non-destructive hot volume & database streaming backups with dual-tier retention rotation.
 - [`scripts/server-ssh-tunnel.ps1`](scripts/server-ssh-tunnel.ps1): One-click local port forwarding for internal dashboards (Dockhand, Prometheus, Grafana).
+- [`scripts/apply-security-hardening.sh`](scripts/apply-security-hardening.sh): Applies UFW firewall, Fail2ban jails, and unattended-upgrades with dry-run and lockout prevention.

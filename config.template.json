@@ -1,5 +1,5 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$schema": "./schemas/config.schema.json",
   "title": "DevOpsManagerConfig",
   "description": "Configuration schema for the DevOps Manager skill managing remote servers, Docker environments, reverse proxies, and observability.",
   "active_profile": "production",

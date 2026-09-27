@@ -1,0 +1,231 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/AminFallah4252/agent-devops-manager/main/schemas/config.schema.json",
+  "title": "DevOpsManagerConfig",
+  "description": "Strict JSON Schema for DevOps Manager configuration (config.json).",
+  "type": "object",
+  "required": [
+    "active_profile",
+    "profiles"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "Path or URL to JSON Schema definition."
+    },
+    "title": {
+      "type": "string",
+      "description": "Optional human-readable title for configuration."
+    },
+    "description": {
+      "type": "string",
+      "description": "Optional description for configuration."
+    },
+    "active_profile": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Name of the default active profile. Must match a key in profiles."
+    },
+    "profiles": {
+      "type": "object",
+      "description": "Map of profile configurations keyed by profile name.",
+      "minProperties": 1,
+      "additionalProperties": {
+        "$ref": "#/$defs/profile"
+      }
+    }
+  },
+  "$defs": {
+    "profile": {
+      "type": "object",
+      "description": "Configuration settings for a target host/environment.",
+      "required": [
+        "name",
+        "host",
+        "user",
+        "ssh_port",
+        "web_gateway",
+        "observability",
+        "thresholds",
+        "safety"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Descriptive display name for the profile."
+        },
+        "host": {
+          "type": "string",
+          "minLength": 1,
+          "description": "IP address or domain name of remote host."
+        },
+        "user": {
+          "type": "string",
+          "minLength": 1,
+          "description": "SSH username on remote host."
+        },
+        "ssh_port": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65535,
+          "description": "SSH listening port (1-65535)."
+        },
+        "ssh_alias": {
+          "type": "string",
+          "description": "Optional SSH config host alias."
+        },
+        "identity_file": {
+          "type": "string",
+          "description": "Path to SSH private key file."
+        },
+        "base_deploy_path": {
+          "type": "string",
+          "description": "Base directory on remote host for deployments."
+        },
+        "web_gateway": {
+          "$ref": "#/$defs/web_gateway"
+        },
+        "observability": {
+          "$ref": "#/$defs/observability"
+        },
+        "thresholds": {
+          "$ref": "#/$defs/thresholds"
+        },
+        "safety": {
+          "$ref": "#/$defs/safety"
+        }
+      }
+    },
+    "web_gateway": {
+      "type": "object",
+      "description": "Reverse proxy and gateway configuration.",
+      "required": [
+        "type",
+        "container_name",
+        "compose_path",
+        "conf_dir"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Gateway technology (e.g. nginx-docker, nginx-native, caddy)."
+        },
+        "container_name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Name of the gateway container."
+        },
+        "compose_path": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Path to gateway docker-compose.yml file."
+        },
+        "conf_dir": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Path to directory containing gateway site configurations."
+        },
+        "cert_path": {
+          "type": "string",
+          "description": "Path to SSL/TLS certificate directory."
+        }
+      }
+    },
+    "observability": {
+      "type": "object",
+      "description": "Monitoring and observability stack endpoints.",
+      "required": [
+        "dockhand_url",
+        "prometheus_port",
+        "grafana_port"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "dockhand_url": {
+          "type": "string",
+          "minLength": 1,
+          "description": "URL of Dockhand daemon dashboard."
+        },
+        "prometheus_port": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65535,
+          "description": "Port Prometheus listens on (1-65535)."
+        },
+        "grafana_port": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65535,
+          "description": "Port Grafana listens on (1-65535)."
+        },
+        "tunnel_alias": {
+          "type": "string",
+          "description": "Optional SSH tunnel configuration alias."
+        }
+      }
+    },
+    "thresholds": {
+      "type": "object",
+      "description": "Resource limits and warning thresholds.",
+      "required": [
+        "min_free_disk_gb",
+        "max_disk_usage_percent",
+        "max_ram_usage_percent"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "min_free_disk_gb": {
+          "type": "number",
+          "minimum": 0.5,
+          "description": "Minimum required free disk space in GB (>= 0.5)."
+        },
+        "max_disk_usage_percent": {
+          "type": "number",
+          "minimum": 1.0,
+          "maximum": 100.0,
+          "description": "Maximum tolerated disk usage percentage (1-100)."
+        },
+        "max_ram_usage_percent": {
+          "type": "number",
+          "minimum": 1.0,
+          "maximum": 100.0,
+          "description": "Maximum tolerated RAM usage percentage (1-100)."
+        }
+      }
+    },
+    "safety": {
+      "type": "object",
+      "description": "Safety guardrails and execution constraints.",
+      "required": [
+        "enforce_docker_only",
+        "protect_active_volumes",
+        "require_preflight_checks",
+        "dry_run_nginx_reload"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "enforce_docker_only": {
+          "type": "boolean",
+          "description": "Ensure only containerized services are managed."
+        },
+        "protect_active_volumes": {
+          "type": "boolean",
+          "description": "Prevent destructive volume pruning or deletion."
+        },
+        "require_preflight_checks": {
+          "type": "boolean",
+          "description": "Require validation checks prior to operations."
+        },
+        "dry_run_nginx_reload": {
+          "type": "boolean",
+          "description": "Validate nginx configuration with -t before reload."
+        }
+      }
+    }
+  }
+}
