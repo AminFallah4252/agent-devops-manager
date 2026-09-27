@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "active_profile": "mock-profile",
+  "profiles": {
+    "mock-profile": {
+      "name": "Mock Test Environment",
+      "host": "127.0.0.1",
+      "user": "testadmin",
+      "ssh_port": 2222,
+      "ssh_alias": "mock-ssh-alias",
+      "identity_file": "~/.ssh/id_rsa_test",
+      "base_deploy_path": "/home/testadmin",
+      "web_gateway": {
+        "type": "nginx-docker",
+        "container_name": "nginx-proxy",
+        "compose_path": "/home/testadmin/nginx-proxy/docker-compose.yml",
+        "conf_dir": "/home/testadmin/nginx-proxy/conf.d",
+        "cert_path": "/etc/letsencrypt"
+      },
+      "observability": {
+        "dockhand_url": "http://127.0.0.1:8008",
+        "prometheus_port": 19090,
+        "grafana_port": 3000,
+        "tunnel_alias": "mock-tunnel"
+      },
+      "thresholds": {
+        "min_free_disk_gb": 3.0,
+        "max_disk_usage_percent": 88.0,
+        "max_ram_usage_percent": 85.0
+      },
+      "safety": {
+        "enforce_docker_only": true,
+        "require_preflight_checks": true,
+        "protect_active_volumes": true,
+        "dry_run_nginx_reload": true
+      }
+    }
+  }
+}

@@ -1,0 +1,61 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  lint-and-validate:
+    name: ShellCheck & Schema Validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: ShellCheck Linting & JSON Validation
+        run: |
+          chmod +x tests/lint.sh
+          bash tests/lint.sh
+
+      - name: Python Configuration Schema Validation
+        run: |
+          if [ -f "scripts/validate-config.py" ]; then
+            python scripts/validate-config.py --check config.template.json
+          else
+            python -m json.tool config.template.json > /dev/null
+          fi
+
+  bash-test-suite:
+    name: POSIX Bash Test Runner
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Execute POSIX Test Runner
+        run: |
+          chmod +x scripts/*.sh tests/bash/*.sh
+          bash tests/bash/test_runner.sh
+
+  powershell-test-suite:
+    name: Pester v5 PowerShell Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Run Pester Unit & Mock Tests
+        shell: pwsh
+        run: |
+          if (-not (Get-Module -ListAvailable -Name Pester | Where-Object { $_.Version -ge [version]'5.5.0' })) {
+            Install-Module -Name Pester -RequiredVersion 5.5.0 -Force -SkipPublisherCheck -Scope CurrentUser
+          }
+          Import-Module Pester -RequiredVersion 5.5.0
+          Invoke-Pester -Path ./tests/powershell/ -Output Detailed
